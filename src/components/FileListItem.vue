@@ -268,6 +268,7 @@
   import { isMihomoConfigFileType } from "@/utils/fileType";
   import { formatPreviewError } from "@/utils/previewError";
   import { downloadBlobResponse } from '@/utils/download';
+  import { isCloudflareBasic } from '@/cloudflare/mode';
 
   const { t } = useI18n();
   const { env } = useBackend();
@@ -632,13 +633,13 @@
   };
 
   const onClickShareLink = async () => {
-    console.log('props', props)
+    if (!isCloudflareBasic) console.log('props', props)
     const type = props.type;
     const data = props.file;
     emit("share", data, type);
   };
   const onClickCopyLink = async () => {
-    const path = `/api/file/${encodeURIComponent(name)}`;
+    const path = `${isCloudflareBasic ? '/download/file/' : '/api/file/'}${encodeURIComponent(name)}`;
     const url = `${host.value}${path}`;
 
     try {

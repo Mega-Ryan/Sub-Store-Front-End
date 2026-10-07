@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 
 import { semverGte } from '@/utils/semver';
+import { isCloudflareBasic, CLOUDFLARE_API_PREFIX } from '@/cloudflare/mode';
 
 export const isShareType = (value: unknown): value is 'sub' | 'col' | 'file' => {
   return value === 'sub' || value === 'col' || value === 'file';
@@ -458,6 +459,10 @@ export const getSharePublicUrl = ({
   token: string;
 }) => {
   const normalizedShareBaseUrl = normalizeShareBaseUrl(shareBaseUrl);
+
+  if (isCloudflareBasic) {
+    return `${window.location.origin}${CLOUDFLARE_API_PREFIX}/share/${type}/${encodeURIComponent(name)}?token=${encodeURIComponent(token)}`;
+  }
 
   if (!normalizedShareBaseUrl && !secretPath.startsWith('/')) {
     throw new Error('INVALID_SECRET_PATH');

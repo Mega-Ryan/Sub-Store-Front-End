@@ -68,6 +68,7 @@
 </template>
 
 <script lang="ts" setup>
+import { supportsFeature } from '@/cloudflare/capabilities';
 import { useGlobalStore } from '@/store/global';
 import { useSettingsStore } from '@/store/settings';
 import { useSystemStore } from "@/store/system";
@@ -126,6 +127,7 @@ const shouldHideFilesTab = computed(() => {
   return !!appearanceSetting.value.istabBar2;
 });
 const shouldHideSyncTab = computed(() => {
+  if (!supportsFeature('artifactSync')) return true;
   if (hasCachedAppearanceNavigationSetting.value) {
     return !!appearanceSetting.value.istabBar;
   }

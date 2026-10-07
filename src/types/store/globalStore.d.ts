@@ -25,6 +25,11 @@ interface GlobalStoreState {
 }
 
 interface ENV {
+  capabilities?: {
+    processors?: string[];
+    targets?: string[];
+    [feature: string]: boolean | string[] | undefined;
+  };
   meta?: any;
   hasNewVersion?: boolean;
   latestVersion?: string;
@@ -41,5 +46,6 @@ interface ENV {
     | 'Clash'
     | 'ClashMeta'
     | 'V2Ray'
-    | 'Node';
+    | 'Node'
+    | 'Cloudflare Workers';
 }

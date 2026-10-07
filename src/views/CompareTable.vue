@@ -330,6 +330,7 @@
 <script lang="ts" setup>
   import { useSubsApi } from '@/api/subs';
   import NodeInfoPanel from '@/components/NodeInfoPanel.vue';
+  import { supportsFeature } from '@/cloudflare/capabilities';
   import PreviewNodeNamesDialog from '@/components/PreviewNodeNamesDialog.vue';
   import { useLogsOverlayStore } from '@/store/logsOverlay';
   import { useSubsStore } from '@/store/subs';
@@ -536,6 +537,7 @@
   };
 
   const loadIpApi = async (nodeData: NodeInfo) => {
+    if (!supportsFeature('nodeInfo')) return;
     invalidateIpApiRequest();
     const requestId = currentIpApiRequestId.value;
     resetIpApiState('loading');

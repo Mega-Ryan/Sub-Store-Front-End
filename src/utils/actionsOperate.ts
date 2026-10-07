@@ -5,6 +5,7 @@ import Regex from '@/views/editor/components/Regex.vue';
 import HandleDuplicate from '@/views/editor/components/HandleDuplicate.vue';
 import Script from '@/views/editor/components/Script.vue';
 import AddProxiesFromSubscription from '@/views/editor/components/AddProxiesFromSubscription.vue';
+import { supportsProcessor } from '@/cloudflare/capabilities';
 
 export const addItem = (
   form,
@@ -13,6 +14,9 @@ export const addItem = (
   selectedOptions,
   t
 ) => {
+  if (!supportsProcessor(selectedOptions[0]?.value)) {
+    throw new Error('UNSUPPORTED_FEATURE: 当前后端不支持此节点操作');
+  }
   const id = Math.random() * 100000000 + '';
   const type = selectedOptions[0].value;
   const args = selectedOptions[0].args;

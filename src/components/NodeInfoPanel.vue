@@ -16,7 +16,7 @@
           </li>
         </ul>
       </nut-tabpane>
-      <nut-tabpane :title="$t('comparePage.nodeInfo.ipApi.title')">
+      <nut-tabpane v-if="supportsFeature('nodeInfo')" :title="$t('comparePage.nodeInfo.ipApi.title')">
         <ul v-if="hasIpApiData" class="info-ul">
           <li>
             <strong class="node-name">{{ props.nodeInfo.name }}</strong>
@@ -72,6 +72,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { supportsFeature } from '@/cloudflare/capabilities';
   import { useCodeStore } from '@/store/codeStore';
   import cmView from '@/views/editCode/cmView.vue';
   import { useQRCode } from '@vueuse/integrations/useQRCode';

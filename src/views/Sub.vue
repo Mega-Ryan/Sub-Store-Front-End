@@ -273,6 +273,7 @@ import { getShareCreatePath } from "@/utils/share";
 import { initStores } from "@/utils/initApp";
 import { listItemMatchesSearch, shouldSearchListRemark } from "@/utils/listSearch";
 import { isMobile } from "@/utils/isMobile";
+import { isCloudflareBasic } from '@/cloudflare/mode';
 const { env } = useBackend();
 const { showNotify } = useAppNotifyStore();
 const subsApi = useSubsApi();
@@ -570,33 +571,17 @@ const fileChange = async (event) => {
   if(!file) return;
   try {
     restoreIsLoading.value = true;
-    const reader = new FileReader();
-    reader.readAsText(file);
-    reader.onload = async () => {
-      const item = JSON.parse(String(reader.result));
-      const suffix = new Date().getTime();
-      item.name += `_${suffix}`;
-      item.displayName += `_${suffix}`;
-      item['display-name'] = item.displayName;
-      const res = await subsApi.createSub(item.subscriptions ? 'collections' : 'subs', item);
-      // await subsStore.fetchSubsData();
-      
-      // const res = await useSettingsApi().restoreSettings({ content: String(reader.result) });
-      if (res?.data?.status === "success") {
-        await initStores(false, true, true);
-        showNotify({
-          type: "success",
-          title: t(`subPage.import.succeed`),
-        });
-        addSubBtnIsVisible.value = false;
-      } else {
-        throw new Error('restore failed');
-      }
-    };
-
-    reader.onerror = e => {
-      throw e;
-    };
+    if (isCloudflareBasic && file.size > 4 * 1024 * 1024) throw new Error('导入文件超过 4 MiB 上限');
+    const item = JSON.parse(await file.text());
+    const suffix = new Date().getTime();
+    item.displayName = `${item.displayName || item['display-name'] || item.name}_${suffix}`;
+    item.name += `_${suffix}`;
+    item['display-name'] = item.displayName;
+    const res = await subsApi.createSub(item.subscriptions ? 'collections' : 'subs', item);
+    if (res?.data?.status !== "success") throw new Error('restore failed');
+    await initStores(false, true, true);
+    showNotify({ type: "success", title: t(`subPage.import.succeed`) });
+    addSubBtnIsVisible.value = false;
     
   } catch (e) {
     showNotify({
@@ -606,6 +591,7 @@ const fileChange = async (event) => {
     console.error(e);
   } finally {
     restoreIsLoading.value = false;
+    event.target.value = '';
   }
 };
 const importTips = () => {

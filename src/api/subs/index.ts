@@ -1,5 +1,7 @@
 import request from '@/api';
 import { AxiosPromise } from 'axios';
+import { isCloudflareBasic } from '@/cloudflare/mode';
+import { useSubsStore } from '@/store/subs';
 
 export function useSubsApi() {
   return {
@@ -65,10 +67,11 @@ export function useSubsApi() {
       name: string,
       data: Sub | Collection
     ): AxiosPromise<MyAxiosRes> => {
+      const current = type === 'sub' ? useSubsStore().getOneSub(name) : useSubsStore().getOneCollection(name);
       return request({
         url: `/api/${type}/${encodeURIComponent(name)}`,
         method: 'patch',
-        data,
+        data: isCloudflareBasic ? { ...data, version: data.version ?? current?.version } : data,
       });
     },
     deleteSub: (

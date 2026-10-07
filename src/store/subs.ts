@@ -7,6 +7,7 @@ import { getFlowsUrlList } from '@/utils/getFlowsUrlList';
 import { isAbortError, runFrontendRequestTask } from '@/utils/requestConcurrency';
 import { isShareExpirationMode, isShareExpirationUnit } from '@/utils/share';
 import { normalizeTagArray } from '@/utils/shareTags';
+import { isCloudflareBasic } from '@/cloudflare/mode';
 import { defineStore } from 'pinia';
 
 const { t } = i18n.global;
@@ -593,6 +594,17 @@ export const useSubsStore = defineStore('subsStore', {
       let deleteSucceeded = false;
       try {
         const { showNotify } = useAppNotifyStore();
+
+        if (isCloudflareBasic) {
+          const updateRes = await shareApi.updateShare(token, type, name, data);
+          if (updateRes.data.status !== 'success') throw new Error('updateShare failed');
+          await this.fetchShareData();
+          isShowNotify && showNotify({
+            type: 'success',
+            title: t('sharePage.editor.edit.succeedNotify'),
+          });
+          return { status: 'success', token: updateRes.data.data?.token || token };
+        }
 
         const deleteRes = await shareApi.deleteShare(token, type, name);
         if (deleteRes.data.status !== 'success') {

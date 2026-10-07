@@ -40,6 +40,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { supportsFeature } from '@/cloudflare/capabilities';
   import { useWideScreenNarrowMode } from '@/hooks/useWideScreenNarrowMode';
   import { useGlobalStore } from '@/store/global';
   import { useSettingsStore } from '@/store/settings';
@@ -69,6 +70,7 @@
     return !!appearanceSetting.value.istabBar2;
   });
   const shouldHideSyncTab = computed(() => {
+    if (!supportsFeature('artifactSync')) return true;
     if (hasCachedAppearanceNavigationSetting.value) {
       return !!appearanceSetting.value.istabBar;
     }

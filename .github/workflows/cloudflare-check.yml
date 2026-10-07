@@ -1,0 +1,30 @@
+name: Cloudflare checks
+on:
+  push:
+    branches: [cloudflare-basic]
+  pull_request:
+    branches: [master, cloudflare-basic]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run types:cloudflare
+      - run: pnpm run check:cloudflare
+      - run: pnpm run build:cloudflare
+      - run: pnpm run build:functions
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-pages
+          path: dist
+

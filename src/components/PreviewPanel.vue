@@ -5,11 +5,11 @@
       <nut-icon name="tips"></nut-icon>
     </div>
     <div class="preview-options">
-      <div class="preview-option-item">
+      <div v-if="!isCloudflareBasic" class="preview-option-item">
         <input type="checkbox" id="includeUnsupportedProxy" name="includeUnsupportedProxy" value="includeUnsupportedProxy" v-model="includeUnsupportedProxy">
         <label for="includeUnsupportedProxy">{{ includeUnsupportedProxyLabel }}</label>
       </div>
-      <div class="preview-option-item">
+      <div v-if="!isCloudflareBasic" class="preview-option-item">
         <input
           type="checkbox"
           id="prettyYaml"
@@ -19,7 +19,7 @@
         >
         <label for="prettyYaml">{{ prettyYamlLabel }}</label>
       </div>
-      <div class="preview-option-item">
+      <div v-if="!isCloudflareBasic" class="preview-option-item">
         <label>
           <input
             type="checkbox"
@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted, ref, watch } from 'vue';
+  import { onMounted, ref, watch, computed } from 'vue';
   import { Toast } from '@nutui/nutui';
   import json from '@/assets/icons/json.svg';
   import uri from '@/assets/icons/uri.svg';
@@ -101,6 +101,8 @@
   import { useHostAPI } from '@/hooks/useHostAPI';
   import { storeToRefs } from "pinia";
   import { useSettingsStore } from '@/store/settings';
+  import { supportsTarget } from '@/cloudflare/capabilities';
+  import { isCloudflareBasic } from '@/cloudflare/mode';
 
   const settingsStore = useSettingsStore();
   const { changeAppearanceSetting } = settingsStore;
@@ -174,6 +176,7 @@
   };
 
   onMounted(() => {
+    if (isCloudflareBasic) return;
     includeUnsupportedProxy.value = getLocalStorageBoolean(PREVIEW_INCLUDE_UNSUPPORTED_PROXY_KEY);
     prettyYaml.value = getLocalStorageBoolean(PREVIEW_PRETTY_YAML_KEY);
     noFlow.value = getLocalStorageBoolean(PREVIEW_NO_FLOW_KEY);
@@ -224,13 +227,13 @@
     if (path !== null) {
       query.target = path;
     }
-    if (includeUnsupportedProxy.value) {
+    if (!isCloudflareBasic && includeUnsupportedProxy.value) {
       query.includeUnsupportedProxy = true;
     }
-    if (prettyYaml.value) {
+    if (!isCloudflareBasic && prettyYaml.value) {
       query.prettyYaml = true;
     }
-    if (noFlow.value) {
+    if (!isCloudflareBasic && noFlow.value) {
       query.noFlow = true;
     }
     let previewUrl
@@ -267,7 +270,7 @@
       Toast.fail(t("globalNotify.copyFailed", { e: error?.message ?? String(error) }));
     }
   };
-  const platformList = [
+  const platformList = computed(() => [
     {
       name: general,
       path: null,
@@ -344,7 +347,7 @@
       path: 'JSON',
       icon: json,
     },
-  ];
+  ].filter(platform => supportsTarget(platform.path)));
   const tips = () => {
     window.open('https://github.com/sub-store-org/Sub-Store/wiki/%E9%93%BE%E6%8E%A5%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E');
     // Dialog({

@@ -31,6 +31,7 @@ interface Process {
 }
 
 interface Sub {
+  version?: number;
   name: string;
   content?: string;
   displayName?: string;
@@ -51,6 +52,7 @@ interface Sub {
 }
 
 interface Collection {
+  version?: number;
   name: string;
   displayName?: string;
   remark?: string;

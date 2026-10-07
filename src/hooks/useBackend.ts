@@ -5,6 +5,7 @@ import loon from '@/assets/icons/loon.png';
 import stash from '@/assets/icons/stash.png';
 import egern from '@/assets/icons/egern.png';
 import node from '@/assets/icons/node.svg?url';
+import cloudflare from '@/assets/icons/cloudflare.svg?url';
 
 import { useGlobalStore } from '@/store/global';
 import { storeToRefs } from 'pinia';
@@ -17,6 +18,8 @@ export const useBackend = () => {
   const isEnvReady = computed(() => !!env.value.backend);
   const icon = computed(() => {
     switch (env.value.backend) {
+      case 'Cloudflare Workers':
+        return cloudflare;
       case 'Surge':
         return surge;
       case 'Egern':

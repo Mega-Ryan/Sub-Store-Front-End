@@ -9,7 +9,14 @@
     "build": "vue-tsc --noEmit && vite build",
     "check:locales": "node scripts/check-locales.mjs",
     "preview": "vite preview --host",
-    "changelog": "conventional-changelog -p cli -i CHANGELOG.md -s"
+    "changelog": "conventional-changelog -p cli -i CHANGELOG.md -s",
+    "build:cloudflare": "vue-tsc --noEmit && vite build --mode cloudflare",
+    "types:cloudflare": "wrangler types worker-configuration.d.ts --config wrangler.staging.jsonc",
+    "test:cloudflare": "node --test scripts/test-cloudflare.mjs",
+    "check:cloudflare": "vue-tsc --noEmit && tsc --project tsconfig.cloudflare.json && node --test scripts/test-cloudflare.mjs",
+    "build:functions": "wrangler pages functions build functions --outdir .wrangler/pages-functions --build-output-directory dist --compatibility-date 2026-10-06 --compatibility-flags nodejs_compat",
+    "configure:cloudflare": "node scripts/select-cloudflare-config.mjs",
+    "smoke:cloudflare": "node scripts/smoke-cloudflare.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.12.0",
@@ -79,6 +86,7 @@
     "vite-plugin-style-import": "^2.0.0",
     "vite-plugin-svg-icons": "^2.0.1",
     "vue-tsc": "^0.35.2",
-    "workbox-window": "^7.0.0"
+    "workbox-window": "^7.0.0",
+    "wrangler": "4.147.0"
   }
 }

@@ -5,6 +5,7 @@ import { useArtifactsStore } from "@/store/artifacts";
 import { useGlobalStore } from "@/store/global";
 import { useSettingsStore } from "@/store/settings";
 import { useSubsStore } from "@/store/subs";
+import { supportsFeature } from '@/cloudflare/capabilities';
 // import { Toast } from '@nutui/nutui';
 
 export const initStores = async (
@@ -69,7 +70,7 @@ export const initStores = async (
     // 只有在成功获取环境信息后才继续获取其他数据
     await subsStore.fetchSubsData();
     await new Promise((resolve) => setTimeout(resolve, 50));
-    await artifactsStore.fetchArtifactsData();
+    if (supportsFeature('artifactSync')) await artifactsStore.fetchArtifactsData();
     await settingsStore.fetchSettings();
     await settingsStore.syncLocalAppearanceSetting();
 
