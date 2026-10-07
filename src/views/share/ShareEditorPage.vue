@@ -150,6 +150,7 @@
           </template>
 
           <template v-else-if="isCountExpirationMode">
+            <p v-if="isCloudflareBasic" style="padding: 12px 16px; line-height: 1.6;">开始导出即消耗一次；上游获取失败也可能消耗一次。</p>
             <nut-form-item
               :label="$t(`sharePage.createShare.countValue.label`)"
               prop="expiresValue"
@@ -194,6 +195,7 @@
             >
               <nut-input
                 v-model="form.usedCount"
+                :readonly="isCloudflareBasic"
                 class="nut-input-text"
                 :border="false"
                 :placeholder="$t(`sharePage.createShare.usedCountValue.placeholder`)"
@@ -238,6 +240,7 @@
 
           <nut-form-item
             :label="$t(`sharePage.createShare.token.label`)"
+            v-if="!isCloudflareBasic"
             prop="token"
             :rules="[
               {
@@ -258,7 +261,7 @@
             />
           </nut-form-item>
 
-          <nut-form-item prop="age-public-key">
+          <nut-form-item prop="age-public-key" v-if="!isCloudflareBasic">
             <template #label>
               <span class="label-with-tip" @click="ageOutputTips">
                 <span>{{ $t("ageKey.publicKey.label") }}</span>
@@ -277,6 +280,9 @@
               <AgeKeyHelper v-model="form['age-public-key']" />
             </div>
           </nut-form-item>
+          <p v-if="isCloudflareBasic" style="padding: 12px 16px; line-height: 1.6;">
+            分享凭据由服务器随机生成。编辑会保留现有链接与已消耗次数。
+          </p>
           </div>
 
           <div v-show="!editorTabsEnabled || activeEditorTab === 'display'" class="editor-tab-content">
@@ -434,6 +440,7 @@
 </template>
 
 <script setup lang="ts">
+import { isCloudflareBasic } from '@/cloudflare/mode';
 import { Dialog, Toast } from "@nutui/nutui";
 import { usePreferredDark } from "@vueuse/core";
 import { useQRCode } from "@vueuse/integrations/useQRCode";
@@ -1409,7 +1416,7 @@ const getSubmitParams = async (): Promise<ShareToken | null> => {
     return null;
   }
 
-  if (!validateTokenBeforeSubmit()) {
+  if (!isCloudflareBasic && !validateTokenBeforeSubmit()) {
     return null;
   }
 
@@ -1476,7 +1483,7 @@ const getCreateSubmitParams = (params: ShareToken): ShareToken => {
     ...params.payload,
   };
 
-  if (payload.token == null || payload.token === "") {
+  if (isCloudflareBasic || payload.token == null || payload.token === "") {
     delete payload.token;
   }
 

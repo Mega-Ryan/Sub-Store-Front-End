@@ -19,6 +19,8 @@ import 'virtual:svg-icons-register';
 import { createApp } from 'vue';
 
 import App from './App.vue';
+import CloudflareApp from './cloudflare/App.vue';
+import { isCloudflareBasic } from './cloudflare/mode';
 
 export function initializeApp() {
   // 创建一个回调函数来处理变化
@@ -38,11 +40,11 @@ export function initializeApp() {
   // 开始观察`body`元素上的`class`属性的变化
   observer.observe(document.body, { attributes: true });
   const pinia = createPinia();
-  const app = createApp(App);
+  const app = createApp(isCloudflareBasic ? CloudflareApp : App);
 
   nutUi(app);
-  app.use(router);
   app.use(pinia);
+  app.use(router);
   app.use(i18n);
   app.component('font-awesome-icon', FontAwesomeIcon);
   app.component('svg-icon', SvgIcon);

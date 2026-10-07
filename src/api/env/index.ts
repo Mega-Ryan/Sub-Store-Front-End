@@ -1,13 +1,14 @@
 import request from '@/api';
 import { semverMajorMinorGt } from '@/utils/semver';
 import { AxiosPromise } from 'axios';
+import { isCloudflareBasic } from '@/cloudflare/mode';
 
 export function useEnvApi() {
   const localStorageKey = 'envCache'; // env 读取加入缓存 重启会自动清理
 
   return {
     getEnv: (options?: { bypassCache?: boolean }): AxiosPromise<MyAxiosRes> => {
-      const bypassCache = options?.bypassCache === true;
+      const bypassCache = isCloudflareBasic || options?.bypassCache === true;
       const cachedData = bypassCache ? null : localStorage.getItem(localStorageKey);
 
       if (cachedData && !bypassCache) {
@@ -43,7 +44,7 @@ export function useEnvApi() {
         // }
         const expiry = Date.now() + 60 * 60 * 1000;
         const dataToCache = { data: response, expiry };
-        localStorage.setItem(localStorageKey, JSON.stringify(dataToCache));
+        if (!isCloudflareBasic) localStorage.setItem(localStorageKey, JSON.stringify(dataToCache));
         return response;
       });
       return promise;

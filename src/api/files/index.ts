@@ -1,5 +1,7 @@
 import request from '@/api';
 import { AxiosPromise } from 'axios';
+import { isCloudflareBasic } from '@/cloudflare/mode';
+import { useSubsStore } from '@/store/subs';
 
 export function useFilesApi() {
   return {
@@ -46,7 +48,7 @@ export function useFilesApi() {
       return request({
         url: `/api/file/${encodeURIComponent(name)}`,
         method: 'patch',
-        data,
+        data: isCloudflareBasic ? { ...data, version: data.version ?? useSubsStore().getOneFile(name)?.version } : data,
       });
     },
     deleteFile: (

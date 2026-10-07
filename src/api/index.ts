@@ -2,6 +2,7 @@ import { useAppNotifyStore } from '@/store/appNotify';
 import axios, { AxiosError, AxiosPromise, AxiosResponse } from 'axios';
 import { getHostAPIUrl } from '@/hooks/useHostAPI';
 import { getApiRequestTimeout } from '@/utils/requestTimeout';
+import { isCloudflareBasic } from '@/cloudflare/mode';
 
 let appNotifyStore = null;
 
@@ -84,6 +85,7 @@ const isCanceledRequestError = (error: AxiosError<ErrorResponse>) => {
 const service = axios.create({
   baseURL: getHostAPIUrl(),
   timeout: getApiRequestTimeout(),
+  withCredentials: isCloudflareBasic,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -98,6 +100,11 @@ service.interceptors.response.use(
 
     if (isCanceledRequestError(e))
       return Promise.reject(e);
+
+    if (isCloudflareBasic && e.response?.status === 401) {
+      window.dispatchEvent(new Event('sub-store:unauthorized'));
+      return Promise.reject(e);
+    }
 
     // 流量信息接口的报错,不通知，直接返回
     if (requestUrl.startsWith('/api/sub/flow') || requestUrl.startsWith('https://api.github.com/'))

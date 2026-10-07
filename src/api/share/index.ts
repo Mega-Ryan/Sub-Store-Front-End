@@ -11,6 +11,14 @@ export function useShareApi() {
         data,
       });
     },
+    updateShare: (token: string, type: string, name: string, data: ShareToken): AxiosPromise<MyAxiosRes> => {
+      return request({
+        url: `/api/token/${encodeURIComponent(token)}`,
+        method: "patch",
+        params: { type, name },
+        data,
+      });
+    },
     deleteShare: (
       token: string,
       type: string,

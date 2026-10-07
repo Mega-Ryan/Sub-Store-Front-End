@@ -65,7 +65,7 @@
           <nut-checkbox v-model="ignoreCaseSearch">
             {{ $t('logsPage.search.ignoreCase') }}
           </nut-checkbox>
-          <nut-checkbox v-model="regexSearch">
+          <nut-checkbox v-if="!isCloudflareBasic" v-model="regexSearch">
             {{ $t('logsPage.search.regex') }}
           </nut-checkbox>
         </div>
@@ -269,6 +269,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { copyText as writeClipboardText } from "@/utils/clipboard";
+import { isCloudflareBasic } from '@/cloudflare/mode';
 
 const props = withDefaults(
   defineProps<{
@@ -552,8 +553,8 @@ const submitSearch = () => {
 };
 
 const applyTagFilter = (tag: DisplayLogTag) => {
-  keywordInput.value = tag.regex;
-  regexSearch.value = true;
+  keywordInput.value = isCloudflareBasic ? tag.label : tag.regex;
+  regexSearch.value = !isCloudflareBasic;
   submitSearch();
 };
 
@@ -622,7 +623,7 @@ const buildLogQuery = (options: LoadLogsOptions = {}): DebugLogQuery | null => {
   return {
     limit: normalizedLimit.value,
     keyword,
-    regex: regexSearch.value,
+    regex: !isCloudflareBasic && regexSearch.value,
     ignoreCase: ignoreCaseSearch.value,
   };
 };

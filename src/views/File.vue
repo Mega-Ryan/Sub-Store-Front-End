@@ -49,7 +49,7 @@
               <span>{{ $t(`specificWord.file`) }}</span>
             </router-link>
           </li>
-          <li>
+          <li v-if="!isCloudflareBasic">
             <router-link to="/edit/files/UNTITLED-mihomoConfig" class="router-link">
               <img src="@/assets/icons/clashmeta_color.png" alt="">
               <span>{{ $t(`filePage.type.mihomoConfig`) }}</span>
@@ -199,6 +199,7 @@
 </template>
 
 <script lang="ts" setup>
+import { isCloudflareBasic } from '@/cloudflare/mode';
 import { storeToRefs } from "pinia";
 import { ref, toRaw, onMounted, computed, watch } from "vue";
 import draggable from "vuedraggable";
@@ -402,33 +403,17 @@ const fileChange = async (event) => {
   if(!file) return
   try {
     restoreIsLoading.value = true;
-    const reader = new FileReader();
-    reader.readAsText(file);
-    reader.onload = async () => {
-      const item = JSON.parse(String(reader.result))
-      const suffix = new Date().getTime()
-      item.name += `_${suffix}`
-      item.displayName += `_${suffix}`
-      item['display-name'] = item.displayName
-      const res = await filesApi.createFile(item);
-      // await subsStore.fetchSubsData();
-      
-      // const res = await useSettingsApi().restoreSettings({ content: String(reader.result) });
-      if (res?.data?.status === "success") {
-        await initStores(false, true, true);
-        showNotify({
-          type: "success",
-          title: t(`subPage.import.succeed`),
-        });
-        addSubBtnIsVisible.value = false
-      } else {
-        throw new Error('restore failed')
-      }
-    }
-
-    reader.onerror = e => {
-      throw e
-    }
+    if (isCloudflareBasic && file.size > 4 * 1024 * 1024) throw new Error('导入文件超过 4 MiB 上限');
+    const item = JSON.parse(await file.text());
+    const suffix = new Date().getTime();
+    item.displayName = `${item.displayName || item['display-name'] || item.name}_${suffix}`;
+    item.name += `_${suffix}`;
+    item['display-name'] = item.displayName;
+    const res = await filesApi.createFile(item);
+    if (res?.data?.status !== "success") throw new Error('restore failed');
+    await initStores(false, true, true);
+    showNotify({ type: "success", title: t(`subPage.import.succeed`) });
+    addSubBtnIsVisible.value = false;
     
   } catch (e) {
     showNotify({
@@ -438,6 +423,7 @@ const fileChange = async (event) => {
     console.error(e);
   } finally {
     restoreIsLoading.value = false;
+    event.target.value = '';
   }
 };
 const importTips = () => {

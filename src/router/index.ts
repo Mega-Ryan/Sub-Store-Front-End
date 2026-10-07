@@ -9,6 +9,9 @@ import { initStores } from '@/utils/initApp';
 import { isDynamicImportFailure, resetPwaCacheAndReload } from '@/utils/pwa';
 import My from '@/views/My.vue';
 import i18n from '@/locales';
+import { isCloudflareBasic } from '@/cloudflare/mode';
+import { checkSession } from '@/cloudflare/session';
+import { supportsFeature } from '@/cloudflare/capabilities';
 
 import File from '@/views/File.vue';
 import Sub from '@/views/Sub.vue';
@@ -119,6 +122,11 @@ const router = createRouter({
   // },
   history,
   routes: [
+    ...(isCloudflareBasic ? [{
+      path: '/login',
+      component: () => import('@/cloudflare/Login.vue'),
+      meta: { title: 'login', needTabBar: false, needNavBack: false },
+    }] : []),
     {
       path: '/',
       component: AppLayout,
@@ -148,7 +156,7 @@ const router = createRouter({
         },
         {
           path: '/my',
-          component: My,
+          component: isCloudflareBasic ? () => import('@/cloudflare/Settings.vue') : My,
           meta: {
             title: 'my',
             needTabBar: true,
@@ -229,7 +237,7 @@ const router = createRouter({
         },
         {
           path: '/edit/:editType(files)/:id',
-          component: () => import('@/views/FileEditor.vue'),
+          component: isCloudflareBasic ? () => import('@/cloudflare/FileEditor.vue') : () => import('@/views/FileEditor.vue'),
           meta: {
             title: 'fileEditor',
             needTabBar: false,
@@ -374,7 +382,17 @@ router.afterEach(async (to, from) => {
     }
   }
 });
-router.beforeEach((to, from) => {
+router.beforeEach(async (to, from) => {
+  if (isCloudflareBasic) {
+    const session = await checkSession().catch(() => false);
+    if (to.path === '/login') return session ? '/subs' : true;
+    if (!session) return { path: '/login', query: { redirect: to.fullPath } };
+    if (!useGlobalStore().env.backend) await initStores(false, false, false);
+    if ((to.path === '/sync' || to.path.startsWith('/edit/sync/')) && !supportsFeature('artifactSync')) return '/subs';
+    if (to.path === '/archives' && !supportsFeature('archive')) return '/subs';
+    if (to.path === '/settings/api') return '/my';
+    if (to.path === '/edit/files/UNTITLED-mihomoConfig' || to.path === '/edit/files/UNTITLED-mihomoProfile') return '/edit/files/UNTITLED';
+  }
   document.title = 'Sub-Store';
   // console.log(`beforeEach ${from.path} => ${to.path}`)
   if (to?.path !== '/subs') {

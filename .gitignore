@@ -25,6 +25,11 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+.wrangler/
+wrangler.jsonc
+worker-configuration.d.ts
+.dev.vars*
+!.dev.vars.example
 CODEMAP.md
 CONTEXT_BUNDLE.md
 mydocs

@@ -273,6 +273,7 @@ import { copyText } from "@/utils/clipboard";
 import { isMihomoConfigFileType } from "@/utils/fileType";
 import { useSettingsStore } from '@/store/settings';
 import { WIDE_SCREEN_NARROW_MODE_QUERY } from '@/hooks/useWideScreenNarrowMode';
+import { supportsProcessor } from '@/cloudflare/capabilities';
 
 const { t } = useI18n();
 const settingsStore = useSettingsStore();
@@ -329,7 +330,7 @@ const isActionButtonsCompact = computed(() => {
   return !isWideScreen.value;
 });
 
-const allItems = computed(() => Object.keys(i18nFile.editorPage.subConfig.nodeActions).map(type => {
+const allItems = computed(() => Object.keys(i18nFile.editorPage.subConfig.nodeActions).filter(supportsProcessor).map(type => {
   return {
     text: t(`editorPage.subConfig.nodeActions['${type}'].label`),
     value: type,
@@ -431,6 +432,7 @@ const paste = async () => {
   }
   // console.log(`item`, item)
   if (item?.data?.id && item?.data?.type) {
+    if (!supportsProcessor(item.data.type)) throw new Error('当前后端不支持此节点操作');
     if (item?.source !== sourceType) {
       throw new Error('文件操作与订阅操作不通用')
     }

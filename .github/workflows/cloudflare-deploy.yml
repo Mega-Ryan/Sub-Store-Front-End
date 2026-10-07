@@ -1,0 +1,82 @@
+name: Deploy Cloudflare Pages
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
+      frontend_sha:
+        description: Exact frontend commit SHA on cloudflare-basic
+        type: string
+        required: true
+      backend_sha:
+        description: Validated backend commit SHA deployed to the matching Worker
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-pages-${{ inputs.environment }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Require immutable paired revisions
+        env:
+          FRONT_SHA: ${{ inputs.frontend_sha }}
+          BACK_SHA: ${{ inputs.backend_sha }}
+        run: |
+          [[ "$FRONT_SHA" =~ ^[a-fA-F0-9]{40}$ ]]
+          [[ "$BACK_SHA" =~ ^[a-fA-F0-9]{40}$ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.frontend_sha }}
+          fetch-depth: 0
+      - name: Check approved branch ancestry
+        run: git merge-base --is-ancestor HEAD origin/cloudflare-basic
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run types:cloudflare
+      - run: pnpm run check:cloudflare
+      - run: pnpm run build:cloudflare
+      - name: Verify deployed backend revision
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          EXPECTED_SHA: ${{ inputs.backend_sha }}
+        run: |
+          if [ "$DEPLOY_ENV" = "production" ]; then
+            ORIGIN=https://sub-store-ui-5f8.pages.dev
+          else
+            ORIGIN=https://sub-store-ui-staging.pages.dev
+          fi
+          curl --fail --retry 3 "$ORIGIN/backend/health" --output /tmp/sub-store-health.json
+          node -e "const fs=require('node:fs');const h=JSON.parse(fs.readFileSync('/tmp/sub-store-health.json','utf8'));if(h.data?.revision!==process.env.EXPECTED_SHA)throw new Error('Backend revision mismatch')"
+      - name: Deploy matching frontend
+        env:
+          DEPLOY_ENV: ${{ inputs.environment }}
+          FRONT_SHA: ${{ inputs.frontend_sha }}
+          BACK_SHA: ${{ inputs.backend_sha }}
+        run: |
+          if [ "$DEPLOY_ENV" = "production" ]; then
+            PROJECT=sub-store-ui
+          else
+            PROJECT=sub-store-ui-staging
+          fi
+          pnpm run configure:cloudflare -- "$DEPLOY_ENV"
+          pnpm exec wrangler pages deploy dist --project-name "$PROJECT" --branch cloudflare-basic --commit-hash "$FRONT_SHA"
+          printf 'Frontend: %s\nBackend: %s\nEnvironment: %s\n' "$FRONT_SHA" "$BACK_SHA" "$DEPLOY_ENV" >> "$GITHUB_STEP_SUMMARY"
+

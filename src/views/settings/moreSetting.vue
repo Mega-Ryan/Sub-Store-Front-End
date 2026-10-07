@@ -126,7 +126,7 @@
       </DesktopPicker>
     </nut-cell-group>
 
-    <nut-cell-group v-if="shareBtnVisible">
+    <nut-cell-group v-if="shareBtnVisible && !isCloudflareBasic">
       <nut-cell :title="$t(`moreSettingPage.invalidShareFakeNode`)" class="cell-item">
         <template v-slot:link>
           <nut-switch class="my-switch" v-model="invalidShareFakeNode" size="mini"
@@ -206,6 +206,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { isCloudflareBasic } from '@/cloudflare/mode';
   import DesktopPicker from '@/components/DesktopPicker.vue';
   import { initStores } from "@/utils/initApp";
   import { Dialog, Toast } from '@nutui/nutui';

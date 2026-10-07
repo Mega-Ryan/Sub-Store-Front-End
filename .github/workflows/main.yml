@@ -16,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
+    if: ${{ github.ref != 'refs/heads/cloudflare-basic' && github.head_ref != 'cloudflare-basic' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

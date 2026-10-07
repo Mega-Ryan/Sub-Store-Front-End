@@ -247,7 +247,7 @@
             :label="$t(`editorPage.subConfig.basic.passThroughUA.label`)"
             prop="passThroughUA"
             class="ignore-failed-wrapper"
-            v-if="form.source === 'remote'"
+            v-if="!isCloudflareBasic && form.source === 'remote'"
           >
             <div class="switch-wrapper">
               <nut-switch v-model="form.passThroughUA" @change="handlePassThroughUAChange"/>
@@ -301,6 +301,7 @@
 
           <nut-form-item
             :label="$t(`editorPage.subConfig.basic.proxy.label`)"
+            v-if="!isCloudflareBasic"
             prop="proxy"
           >
             <nut-input
@@ -341,6 +342,7 @@
         <template v-else-if="editType === 'collections'">
           <!-- subscriptionTags -->
           <nut-form-item
+            v-if="!isCloudflareBasic"
             :label="$t(`editorPage.subConfig.basic.subscriptionTags.label`)"
             prop="subscriptionTags"
           >
@@ -481,6 +483,7 @@
             </nut-form-item>
             <nut-form-item
               :label="$t(`editorPage.subConfig.basic.proxy.label`)"
+              v-if="!isCloudflareBasic"
               prop="proxy"
             >
               <nut-input
@@ -496,7 +499,7 @@
           </nut-form-item>
         </template>
 
-        <nut-form-item prop="age-public-key">
+        <nut-form-item prop="age-public-key" v-if="!isCloudflareBasic">
           <template #label>
             <span class="label-with-tip" @click="ageOutputTips">
               <span>{{ $t("ageKey.publicKey.label") }}</span>
@@ -518,6 +521,7 @@
 
         <nut-form-item
           :label="$t(`editorPage.subConfig.basic.ignoreFailedRemoteSub.label`)"
+          v-if="!isCloudflareBasic"
           class="failure-mode-trigger"
           prop="ignoreFailedRemoteSub"
         >
@@ -622,6 +626,8 @@ import { useSubsStore } from "@/store/subs";
 import { useSystemStore } from "@/store/system";
 import { addItem, deleteItem, toggleItem } from "@/utils/actionsOperate";
 import { actionsToProcess } from "@/utils/actionsToPorcess";
+import { isCloudflareBasic } from '@/cloudflare/mode';
+import { supportsFeature } from '@/cloudflare/capabilities';
 import {
   getEditorFoldState,
   getEditorIsFolded,
@@ -1039,9 +1045,10 @@ watchEffect(() => {
     ignoreFailedRemoteSub = 'disabled';
   }
   form.ignoreFailedRemoteSub = ignoreFailedRemoteSub;
-  form.passThroughUA = sourceData.passThroughUA;
+  form.passThroughUA = isCloudflareBasic ? false : sourceData.passThroughUA;
   form["age-public-key"] = sourceData["age-public-key"] || "";
   form.name = sourceData.name;
+  form.version = sourceData.version;
   form.displayName = sourceData.displayName || sourceData["display-name"];
   form.remark = sourceData.remark;
   form.icon = sourceData.icon;
@@ -1176,8 +1183,9 @@ const fetchCompareData = async () => {
   });
   try {
     const data: any = JSON.parse(JSON.stringify(toRaw(form)));
+    if (isCloudflareBasic) data.passThroughUA = false;
     data.process = actionsToProcess(data.process, actionsList, ignoreList);
-    if (data.ignoreFailedRemoteSub === "disabled") {
+    if (isCloudflareBasic || data.ignoreFailedRemoteSub === "disabled") {
       data.ignoreFailedRemoteSub = false;
     }
     if (editType === "collections") {
@@ -1193,7 +1201,7 @@ const fetchCompareData = async () => {
           .filter((item: string) => item.length)
       ),
     ];
-    data.subscriptionTags = [
+    data.subscriptionTags = isCloudflareBasic ? [] : [
       ...new Set(
         (data.subscriptionTags || "")
           .split(",")
@@ -1318,6 +1326,7 @@ const submit = () => {
     });
     // 如果验证成功，开始保存/修改
     const data: any = JSON.parse(JSON.stringify(toRaw(form)));
+    if (isCloudflareBasic) data.passThroughUA = false;
     const iconFit = normalizeOptionalImageFit(form.iconFit);
     if (iconFit) {
       data.iconFit = iconFit;
@@ -1342,7 +1351,7 @@ const submit = () => {
           .filter((item: string) => item.length)
       ),
     ];
-    data.subscriptionTags = [
+    data.subscriptionTags = isCloudflareBasic ? [] : [
       ...new Set(
         (data.subscriptionTags || "")
           .split(",")
@@ -1352,7 +1361,7 @@ const submit = () => {
     ];
     data["display-name"] = data.displayName;
     data.process = actionsToProcess(data.process, actionsList, ignoreList);
-    if (data.ignoreFailedRemoteSub === "disabled"){
+    if (isCloudflareBasic || data.ignoreFailedRemoteSub === "disabled"){
       data.ignoreFailedRemoteSub = false;
     }
     if (editType === "collections") {
@@ -1361,7 +1370,7 @@ const submit = () => {
       delete data.firstSubFlow;
     }
 
-    console.log('submit.....\n', data);
+    if (!isCloudflareBasic) console.log('submit.....\n', data);
 
     let res = null;
 
@@ -1383,7 +1392,7 @@ const submit = () => {
         await subsStore.updateOneData(editType, configName);
       } else {
         await subsStore.fetchSubsData();
-        await useArtifactsStore().fetchArtifactsData();
+        if (supportsFeature('artifactSync')) await useArtifactsStore().fetchArtifactsData();
       }
     }
 

@@ -5,6 +5,7 @@ import service from '@/api';
 import axios from 'axios';
 import { initStores } from '@/utils/initApp';
 import { isValidShareBaseUrl, normalizeShareBaseUrl } from '@/utils/share';
+import { isCloudflareBasic, CLOUDFLARE_API_PREFIX } from '@/cloudflare/mode';
 
 const lsKey = 'hostAPI';
 const defaultAPI = import.meta.env.VITE_API_URL || 'https://sub.store';
@@ -47,6 +48,7 @@ const getHostAPI = (): HostAPIStorage => {
   }
 };
 export const getHostAPIUrl = (): string => {
+  if (isCloudflareBasic) return CLOUDFLARE_API_PREFIX;
   const { current, apis } = getHostAPI();
   return (
     apis.find(api => api.name === current)?.url ||
@@ -55,6 +57,7 @@ export const getHostAPIUrl = (): string => {
 };
 
 export const getHostAPIShareBaseUrl = (): string => {
+  if (isCloudflareBasic) return window.location.origin + CLOUDFLARE_API_PREFIX;
   const { current, apis } = getHostAPI();
   return normalizeShareBaseUrl(apis.find(api => api.name === current)?.shareBaseUrl);
 };
@@ -64,17 +67,19 @@ const setHostAPI = (hostAPI: HostAPIStorage) => {
 };
 export const useHostAPI = () => {
   const { showNotify } = useAppNotifyStore();
-  const apis = ref(getHostAPI().apis);
-  const currentName = ref(getHostAPI().current);
+  const apis = ref<HostAPI[]>(isCloudflareBasic ? [] : getHostAPI().apis);
+  const currentName = ref(isCloudflareBasic ? '' : getHostAPI().current);
   let skipNextCurrentInit = false;
   const currentApi = computed(() => {
     return apis.value.find(api => api.name === currentName.value);
   });
   const currentUrl = computed(() => {
+    if (isCloudflareBasic) return window.location.origin + CLOUDFLARE_API_PREFIX;
     const url = currentApi.value?.url ?? defaultAPI
     return url.startsWith('/') ? `${window.location.origin}${url}` : url;
   });
   const currentShareBaseUrl = computed(() => {
+    if (isCloudflareBasic) return window.location.origin + CLOUDFLARE_API_PREFIX;
     return normalizeShareBaseUrl(currentApi.value?.shareBaseUrl);
   });
 
@@ -213,6 +218,7 @@ export const useHostAPI = () => {
   }: {
     errorCb?: () => Promise<void>;
   }) => {
+    if (isCloudflareBasic) return false;
     const query = window.location.search;
     if (!query) {
       await errorCb?.();

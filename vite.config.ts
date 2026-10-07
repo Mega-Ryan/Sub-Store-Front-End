@@ -112,7 +112,7 @@ const viteConfig = defineConfig((mode: ConfigEnv) => {
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,json}"],
           navigateFallback: "/index.html",
-          navigateFallbackDenylist: [/(^|\/.+)\/(api|download|share)\/.+/],
+          navigateFallbackDenylist: [/^\/backend(?:\/|$)/, /(^|\/.+)\/(api|download|share)\/.+/],
           runtimeCaching: [
             {
               urlPattern: ({ url, request }) => request.destination === "script" && url.origin === self.location.origin,
